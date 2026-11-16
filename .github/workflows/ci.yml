@@ -1,0 +1,33 @@
+name: ci
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: windows-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-dotnet@v6
+        with:
+          global-json-file: global.json
+
+      # Node 24 ships Corepack; build.ps1 runs the pnpm version pinned in web/package.json through it.
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+
+      # UI build, contract check, core tests and a self-contained publish (no installer).
+      - name: Build and test
+        shell: pwsh
+        run: ./build.ps1 -NoPack
