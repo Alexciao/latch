@@ -12,8 +12,11 @@ function Step($name, [scriptblock]$body) {
   if ($LASTEXITCODE -ne 0) { throw "$name failed (exit $LASTEXITCODE)" }
 }
 
-Step "UI dependencies" { corepack pnpm --dir web install --frozen-lockfile }
-Step "UI build" { corepack pnpm --dir web build }
+# Locally Corepack runs the pnpm pinned in web/package.json; CI installs that same version with pnpm/action-setup.
+function Pnpm { if ($env:CI) { pnpm @args } else { corepack pnpm @args } }
+
+Step "UI dependencies" { Pnpm --dir web install --frozen-lockfile }
+Step "UI build" { Pnpm --dir web build }
 Step "Contract is current" { dotnet run --project tools/Latch.ContractGen -- --check }
 Step "Core tests" { dotnet test tests/Latch.Core.Tests -c Release }
 Step "Publish (self-contained, ReadyToRun)" {

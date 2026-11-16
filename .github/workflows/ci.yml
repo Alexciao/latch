@@ -22,10 +22,16 @@ jobs:
         with:
           global-json-file: global.json
 
-      # Node 24 ships Corepack; build.ps1 runs the pnpm version pinned in web/package.json through it.
+      # Version comes from "packageManager" in web/package.json.
+      - uses: pnpm/action-setup@v6
+        with:
+          package_json_file: web/package.json
+
       - uses: actions/setup-node@v7
         with:
           node-version: 24
+          cache: pnpm
+          cache-dependency-path: web/pnpm-lock.yaml
 
       # UI build, contract check, core tests and a self-contained publish (no installer).
       - name: Build and test
