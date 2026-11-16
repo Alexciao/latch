@@ -1,0 +1,11 @@
+bin/
+obj/
+node_modules/
+web/dist/
+artifacts/
+Releases/
+*.user
+.vs/
+spike/**/bin/
+spike/**/obj/
+TestResults/
