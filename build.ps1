@@ -1,10 +1,13 @@
 # One command from a clean clone: builds the UI, checks the contract, runs the tests, publishes Latch
 # self-contained and packs the Velopack installer into artifacts/releases.
-#   pwsh ./build.ps1            full build + installer
-#   pwsh ./build.ps1 -NoPack    skip the installer
-param([switch]$NoPack, [string]$Version = "0.1.0")
+#   pwsh ./build.ps1                   full build + installer
+#   pwsh ./build.ps1 -NoPack           skip the installer
+#   pwsh ./build.ps1 -Version 1.2.3    override the version (default: <Version> in Directory.Build.props)
+param([switch]$NoPack, [string]$Version)
 $ErrorActionPreference = "Stop"
 Set-Location $PSScriptRoot
+if (-not $Version) { $Version = (Select-Xml -Path Directory.Build.props -XPath "//Version").Node.InnerText }
+Write-Host "Latch $Version"
 
 function Step($name, [scriptblock]$body) {
   Write-Host "==> $name" -ForegroundColor Cyan
@@ -13,10 +16,10 @@ function Step($name, [scriptblock]$body) {
 }
 
 # Locally Corepack runs the pnpm pinned in web/package.json; CI installs that same version with pnpm/action-setup.
-function Pnpm { if ($env:CI) { pnpm @args } else { corepack pnpm @args } }
+function Invoke-Pnpm { if ($env:CI) { pnpm @args } else { corepack pnpm @args } }
 
-Step "UI dependencies" { Pnpm --dir web install --frozen-lockfile }
-Step "UI build" { Pnpm --dir web build }
+Step "UI dependencies" { Invoke-Pnpm --dir web install --frozen-lockfile }
+Step "UI build" { Invoke-Pnpm --dir web build }
 Step "Contract is current" { dotnet run --project tools/Latch.ContractGen -- --check }
 Step "Core tests" { dotnet test tests/Latch.Core.Tests -c Release }
 Step "Publish (self-contained, ReadyToRun)" {
