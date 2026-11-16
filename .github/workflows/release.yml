@@ -1,0 +1,68 @@
+name: release
+
+# Push a tag v<version> (matching <Version> in Directory.Build.props) to build, test, package and publish a release.
+# Tags with a hyphen (v1.2.0-beta.1) become prereleases.
+
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release-${{ github.ref }}
+
+jobs:
+  release:
+    runs-on: windows-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Tag matches the project version
+        shell: pwsh
+        env:
+          REF_NAME: ${{ github.ref_name }}
+        run: |
+          $version = $env:REF_NAME.TrimStart('v')
+          $props = (Select-Xml -Path Directory.Build.props -XPath "//Version").Node.InnerText
+          $core = $version.Split('-')[0]
+          if ($core -ne $props) { throw "Tag $env:REF_NAME doesn't match <Version>$props</Version> in Directory.Build.props" }
+          "VERSION=$version" >> $env:GITHUB_ENV
+
+      - uses: actions/setup-dotnet@v6
+        with:
+          global-json-file: global.json
+
+      - uses: pnpm/action-setup@v6
+        with:
+          package_json_file: web/package.json
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: pnpm
+          cache-dependency-path: web/pnpm-lock.yaml
+
+      - name: Build, test and package
+        shell: pwsh
+        run: ./build.ps1 -Version $env:VERSION
+
+      - name: Publish the GitHub release
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REF_NAME: ${{ github.ref_name }}
+        run: |
+          # Every Velopack output (Setup, Portable zip, full nupkg, releases.win.json, assets.win.json, RELEASES):
+          # an update feed needs the complete set.
+          $files = Get-ChildItem artifacts/releases -File | ForEach-Object FullName
+          if (-not ($files | Where-Object { $_ -like '*Setup.exe' })) { throw 'Setup.exe missing' }
+          $flags = @()
+          if ($env:VERSION -match '-') { $flags += '--prerelease' }
+          # Hand-written notes when docs/release-notes/v<version>.md exists, GitHub's generated list otherwise.
+          $notes = "docs/release-notes/v$env:VERSION.md"
+          if (Test-Path $notes) { $flags += @('--notes-file', $notes) } else { $flags += '--generate-notes' }
+          gh release create $env:REF_NAME @files --title "Latch $env:VERSION" --verify-tag @flags
+          if ($LASTEXITCODE -ne 0) { throw "gh release create failed ($LASTEXITCODE)" }

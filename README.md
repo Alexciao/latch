@@ -9,11 +9,12 @@
 A quiet app locker for Windows. The apps you choose hide the moment they open and come back only after your app PIN,
 Windows Hello or a passkey. Hand someone your laptop and they can browse the web without reading your chats.
 
+[![Latest release](https://img.shields.io/github/v/release/Alexciao/latch?label=download&color=3b6fd8)](../../releases/latest)
 [![CI](https://github.com/Alexciao/latch/actions/workflows/ci.yml/badge.svg)](https://github.com/Alexciao/latch/actions/workflows/ci.yml)
-[![Windows 10/11](https://img.shields.io/badge/Windows-10%20%7C%2011-0078d4)](#build-and-install)
+[![Windows 10/11](https://img.shields.io/badge/Windows-10%20%7C%2011-0078d4)](#install)
 [![License: MIT](https://img.shields.io/badge/license-MIT-lightgrey)](LICENSE)
 
-[Features](#features) · [What it doesn't do](#what-latch-doesnt-do) · [Build and install](#build-and-install) · [How it works](#how-it-works)
+[**Download**](../../releases/latest) · [Features](#features) · [What it doesn't do](#what-latch-doesnt-do) · [Install](#install) · [Build from source](#build-from-source)
 
 <br>
 
@@ -83,13 +84,23 @@ Locked windows are hidden, not covered with an overlay: an overlay would still l
 thumbnails and screen sharing, and keystrokes would still reach the app. The reasoning behind this and every other
 choice is in [DECISIONS.md](DECISIONS.md).
 
-## Build and install
+## Install
 
-Latch doesn't have a published release yet, so build the installer yourself. You need:
+1. Download **`LatchApp-win-Setup.exe`** from the [latest release](../../releases/latest) and run it. It installs for
+   your user only, with no admin prompt, and fetches the WebView2 runtime if it's missing. Windows 10 (version 2004 or
+   later) or Windows 11, x64.
+2. The installer isn't code-signed yet, so SmartScreen may say *"Windows protected your PC"*. Click **More info → Run
+   anyway**.
+3. First run walks you through three steps: set your app PIN, optionally turn on Windows Hello or add a passkey, and
+   pick the apps to lock. Latch then lives in the tray and starts with Windows.
 
-- Windows 10 (version 2004 or later) or Windows 11, x64
-- the [.NET 10 SDK](https://dotnet.microsoft.com/download) (pinned in `global.json`)
-- [Node.js](https://nodejs.org) 24 with Corepack, which fetches the pinned pnpm by itself
+The app lives in `%LocalAppData%\LatchApp`. Your settings, PIN hash, history and log live apart from it in
+`%LocalAppData%\Latch`, so reinstalling keeps them. Delete that folder to remove everything.
+
+## Build from source
+
+You need the [.NET 10 SDK](https://dotnet.microsoft.com/download) (pinned in `global.json`) and
+[Node.js](https://nodejs.org) 24 with Corepack, which fetches the pinned pnpm by itself.
 
 ```powershell
 git clone https://github.com/Alexciao/latch
@@ -98,13 +109,8 @@ pwsh ./build.ps1          # UI, contract check, tests, self-contained publish an
 pwsh ./build.ps1 -NoPack  # the same, without the installer
 ```
 
-Run **`artifacts/releases/LatchApp-win-Setup.exe`**. It installs for your user only, with no admin prompt, and fetches
-the WebView2 runtime if it's missing. The installer isn't code-signed, so SmartScreen may say *"Windows protected
-your PC"*: click **More info → Run anyway**. First run walks you through setting a PIN, turning on Windows Hello or a
-passkey, and picking apps.
-
-The app lives in `%LocalAppData%\LatchApp`. Your settings, PIN hash, history and log live apart from it in
-`%LocalAppData%\Latch`, so reinstalling keeps them. Delete that folder to remove everything.
+The installer lands in `artifacts/releases`. Every push to `main` also builds one in CI, attached to the run as
+`latch-installer`.
 
 ### Working on the UI
 
@@ -118,6 +124,20 @@ corepack pnpm --dir web dev   # http://localhost:5173
 URL flags show each state: `?page=history`, `?page=settings`, `?state=fresh` (first run), `?state=attention`,
 `?state=empty`, `?state=long` (worst-case data), and `prompt.html?mock=app|hello|lockout|latch` for the unlock prompt.
 To run a second copy of the real app with its own data, set `LATCH_DATA_DIR` to a scratch folder.
+
+### Releasing
+
+Set the new `<Version>` in `Directory.Build.props`, commit, then tag and push:
+
+```powershell
+git tag v0.2.0
+git push origin main v0.2.0
+```
+
+The [release workflow](.github/workflows/release.yml) checks that the tag matches the version, builds, tests and
+packages Latch, and publishes a GitHub release with the installer and the full Velopack set. A tag with a hyphen
+(`v0.2.0-beta.1`) becomes a prerelease. Notes come from `docs/release-notes/v<version>.md` if it exists, otherwise
+GitHub generates them from the commits.
 
 ## How it works
 

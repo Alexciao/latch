@@ -2,6 +2,7 @@ name: ci
 
 on:
   push:
+    branches: [main]
   pull_request:
 
 permissions:
@@ -33,7 +34,17 @@ jobs:
           cache: pnpm
           cache-dependency-path: web/pnpm-lock.yaml
 
-      # UI build, contract check, core tests and a self-contained publish (no installer).
-      - name: Build and test
+      # UI build, contract check, core tests, self-contained publish and the Velopack installer.
+      # CI builds are versioned <Directory.Build.props version>-ci.<run number> so they never look like a release.
+      - name: Build, test and package
         shell: pwsh
-        run: ./build.ps1 -NoPack
+        run: |
+          $base = (Select-Xml -Path Directory.Build.props -XPath "//Version").Node.InnerText
+          ./build.ps1 -Version "$base-ci.${{ github.run_number }}"
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: latch-installer
+          path: artifacts/releases/*Setup.exe
+          if-no-files-found: error
+          retention-days: 14
