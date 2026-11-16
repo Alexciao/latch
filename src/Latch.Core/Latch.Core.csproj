@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <RootNamespace>Latch.Core</RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="System.Formats.Cbor" />
+  </ItemGroup>
+  <ItemGroup>
+    <!-- The one copy file is shared with the UI; the core reads error and tray strings from it. -->
+    <EmbeddedResource Include="..\..\web\src\copy.json" LogicalName="Latch.copy.json" />
+    <InternalsVisibleTo Include="Latch.Core.Tests" />
+  </ItemGroup>
+</Project>
