@@ -214,7 +214,8 @@ public sealed class LatchService : ILatchApi
                 Auth.HelloOn,
                 Auth.PasskeyOn,
                 Auth.LockoutUntil,
-                _settings.Theme);
+                _settings.Theme,
+                Auth.PinLength);
         }
     }
 

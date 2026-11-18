@@ -4,3 +4,5 @@
 *.png binary
 *.exe binary
 DECISIONS.md merge=union
+*.ttf binary
+*.woff2 binary

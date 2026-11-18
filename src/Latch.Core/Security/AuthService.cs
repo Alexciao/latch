@@ -31,6 +31,9 @@ public sealed class AuthService
     }
 
     public bool PinSet { get { lock (_gate) return _s.PinHash is not null; } }
+
+    /// <summary>How many digits the PIN has, once known; the prompt submits as soon as that many are typed.</summary>
+    public int? PinLength { get { lock (_gate) return _s.PinHash is not null && _s.PinLength > 0 ? _s.PinLength : null; } }
     public bool HelloOn { get { lock (_gate) return _s.HelloOn; } }
     public bool PasskeyOn { get { lock (_gate) return Passkey is not null; } }
 
@@ -66,7 +69,7 @@ public sealed class AuthService
     {
         if (!PinHasher.IsValidFormat(pin)) throw new ApiException(ErrorCode.PinFormat);
         var (hash, salt) = PinHasher.Hash(pin, _iterations);
-        Update(s => s with { PinHash = hash, PinSalt = salt, PinIterations = _iterations });
+        Update(s => s with { PinHash = hash, PinSalt = salt, PinIterations = _iterations, PinLength = pin.Length });
     }
 
     public void SetHello(bool on) => Update(s => s with { HelloOn = on });
@@ -90,7 +93,9 @@ public sealed class AuthService
             if (LockoutUntil is { } until) return new(UnlockOutcome.LockedOut, until, false);
             var ok = s.PinHash is not null && s.PinSalt is not null && PinHasher.IsValidFormat(pin)
                 && await Task.Run(() => PinHasher.Verify(pin, s.PinHash, s.PinSalt, s.PinIterations));
-            return ok ? Succeeded() : Failed();
+            if (!ok) return Failed();
+            if (s.PinLength != pin.Length) Update(x => x with { PinLength = pin.Length }); // Learned for PINs set before it was stored.
+            return Succeeded();
         }
         finally
         {

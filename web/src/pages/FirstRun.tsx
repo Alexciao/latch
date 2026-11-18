@@ -25,7 +25,7 @@ function PinStep({ next }: { next: () => void }) {
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const submit = async () => {
-    if (pin.length < 6) return setError(copy.setup.pinShort);
+    if (pin.length < 4) return setError(copy.setup.pinShort);
     if (pin !== again) return setError(copy.setup.pinMismatch);
     setBusy(true);
     try {
@@ -43,7 +43,7 @@ function PinStep({ next }: { next: () => void }) {
         <PinInput value={again} onChange={(v) => (setAgain(v), setError(null))} label={copy.setup.pinAgain} onEnter={() => void submit()} />
       </div>
       <p className="mt-1 h-5 text-xs leading-5 text-destructive">{error}</p>
-      <Button className="mt-4" disabled={busy || pin.length < 6 || again.length < 6} onClick={() => void submit()}>
+      <Button className="mt-4" disabled={busy || pin.length < 4 || again.length < 4} onClick={() => void submit()}>
         {copy.common.continue}
       </Button>
     </Step>

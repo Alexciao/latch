@@ -6,6 +6,14 @@ namespace Latch.Host;
 /// <summary>System theme and window chrome (dark title bar, Mica on Windows 11, rounded corners).</summary>
 internal static class Theme
 {
+    /// <summary>
+    /// Inter, the UI's font, for native WPF surfaces: loaded from the Fonts folder next to Latch.exe, falling back
+    /// to the system font for anything Inter doesn't cover. A new instance per caller, as callers run on different
+    /// threads.
+    /// </summary>
+    public static System.Windows.Media.FontFamily UiFont() =>
+        new(new Uri(Path.Combine(AppContext.BaseDirectory, "Fonts") + Path.DirectorySeparatorChar), "./#Inter, Segoe UI Variable Text, Segoe UI");
+
     /// <summary>Mica needs DWMWA_SYSTEMBACKDROP_TYPE, available from Windows 11 22H2 (build 22621).</summary>
     public static bool MicaSupported => Environment.OSVersion.Version.Build >= 22621;
 

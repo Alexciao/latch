@@ -30,6 +30,7 @@ internal sealed class HostApp : IPlatform
     private MainHost _main = null!;
     private TrayIcon? _tray;
     private Toast _toast = null!;
+    private Updater _updater = null!;
     private DispatcherTimer? _relockTimer;
     private DispatcherTimer? _heartbeatTimer;
     private bool _statePushQueued;
@@ -53,7 +54,7 @@ internal sealed class HostApp : IPlatform
 
         _service = new LatchService(_paths, this, TimeProvider.System);
         _rpc = new Rpc(_service, (method, e) => Log.Error("api " + method, e));
-        _watcher = new WindowWatcher(_service, () => Theme.IsDark(_service.Settings.Theme), _paths.Icons, () => _ui.BeginInvoke(() => _prompt.FocusFromCover()), ruleId => _ui.BeginInvoke(() => _service.DismissApp(ruleId)));
+        _watcher = new WindowWatcher(_service, () => Theme.IsDark(_service.Settings.Theme), _paths.Icons, _paths.Covers, () => _ui.BeginInvoke(() => _prompt.FocusFromCover()), ruleId => _ui.BeginInvoke(() => _service.DismissApp(ruleId)));
         _prompt = new PromptHost(_paths, _rpc, () => _service.Settings.Theme, PromptAnchor, () => _watcher.LastHiddenAt, PromptArea, PromptCover);
         _prompt.DialogStacking += _watcher.RestackCovers;
         _main = new MainHost(_paths, _rpc, () => _service.Settings.Theme, () =>
@@ -64,7 +65,7 @@ internal sealed class HostApp : IPlatform
 
         var boot = DateTimeOffset.Now - TimeSpan.FromMilliseconds(Environment.TickCount64);
         _toast = new Toast(() => Theme.IsDark(_service.Settings.Theme));
-        _tray = new TrayIcon(OpenMain, LockAll, Quit);
+        _tray = new TrayIcon(OpenMain, LockAll, Quit, RestartToUpdate);
         _tray.HotkeyPressed += LockAll;
         _service.Start(boot);
         _watcher.Start();
@@ -92,6 +93,8 @@ internal sealed class HostApp : IPlatform
             TrimSoon();
         }, TaskScheduler.FromCurrentSynchronizationContext());
         _ = Task.Run(() => _catalog.Preload(_service.Settings.Rules));
+        _updater = new Updater(version => _ui.BeginInvoke(() => UpdateReady(version)));
+        _updater.Start();
         UpdateRelockTimer();
     }
 
@@ -145,6 +148,27 @@ internal sealed class HostApp : IPlatform
         _watcher.Stop();
         _tray?.Dispose();
         Application.Current.Shutdown();
+    }
+
+    /// <summary>An update has been downloaded: say so once, and offer it in the tray menu.</summary>
+    private void UpdateReady(string version)
+    {
+        if (_tray is null || _tray.UpdateReady) return;
+        _tray.UpdateReady = true;
+        _toast.Show(Copy.Format("toast.updateTitle", ("version", version)), Copy.Get("toast.updateCaption"));
+    }
+
+    /// <summary>Like Quit (it asks for an unlock first), then installs the update and starts Latch again.</summary>
+    private async void RestartToUpdate()
+    {
+        if (_quitting || _updater.Pending is null) return;
+        if (!await _service.RequestQuitAsync()) return;
+        _quitting = true;
+        Log.Info($"Restarting to install {_updater.Pending}");
+        _watcher.RestoreAll();
+        _watcher.Stop();
+        _tray?.Dispose();
+        _updater.InstallAndRestart();
     }
 
     private void OnSessionSwitch(object? sender, SessionSwitchEventArgs e)

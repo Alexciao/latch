@@ -1,5 +1,7 @@
 @import "tailwindcss";
 @import "tw-animate-css";
+/* Inter, bundled (opsz + wght axes): the optical size follows the font size, so headings get the display cut. */
+@import "@fontsource-variable/inter/opsz.css";
 
 /*
  * shadcn/ui tokens with Latch's palette: near-neutral greys, a neutral primary, one quiet blue (focus ring and
@@ -9,8 +11,8 @@
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
-  --font-sans: "Segoe UI Variable Text", "Segoe UI Variable", "Segoe UI", system-ui, sans-serif;
-  --font-display: "Segoe UI Variable Display", "Segoe UI Variable", "Segoe UI", system-ui, sans-serif;
+  --font-sans: "Inter Variable", "Segoe UI Variable Text", "Segoe UI", system-ui, sans-serif;
+  --font-display: "Inter Variable", "Segoe UI Variable Display", "Segoe UI", system-ui, sans-serif;
 
   --color-background: var(--background);
   --color-foreground: var(--foreground);

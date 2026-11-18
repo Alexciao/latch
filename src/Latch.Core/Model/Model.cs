@@ -43,6 +43,8 @@ public sealed record SecretsFile
     public string? PinHash { get; init; }
     public string? PinSalt { get; init; }
     public int PinIterations { get; init; }
+    /// <summary>Digits in the PIN (0: not known yet, for PINs set before 0.2). Lets the prompt submit by itself.</summary>
+    public int PinLength { get; init; }
     public string? PasskeyId { get; init; }
     public string? PasskeyKey { get; init; }
     public uint PasskeyCount { get; init; }

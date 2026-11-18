@@ -166,6 +166,10 @@ internal static class Native
     [StructLayout(LayoutKind.Sequential)]
     public struct BLENDFUNCTION { public byte BlendOp, BlendFlags, SourceConstantAlpha, AlphaFormat; }
 
+    [DllImport("user32.dll")] public static extern bool PrintWindow(nint hwnd, nint hdc, uint flags);
+    [DllImport("gdi32.dll")] public static extern bool StretchBlt(nint dest, int x, int y, int w, int h, nint src, int sx, int sy, int sw, int sh, uint rop);
+    [DllImport("gdi32.dll")] public static extern int SetStretchBltMode(nint hdc, int mode);
+    [DllImport("gdi32.dll")] public static extern bool GdiFlush();
     [DllImport("msimg32.dll")] public static extern bool AlphaBlend(nint dest, int dx, int dy, int dw, int dh, nint src, int sx, int sy, int sw, int sh, BLENDFUNCTION blend);
     [DllImport("kernel32.dll", CharSet = CharSet.Unicode)] public static extern nint GetModuleHandleW(string? name);
     [DllImport("user32.dll")] public static extern nint GetWindowLongPtrW(nint hwnd, int index);

@@ -17,13 +17,37 @@ public class PinAndLockoutTests
     }
 
     [Theory]
-    [InlineData("12345", false)]
+    [InlineData("123", false)]
+    [InlineData("1234", true)]
+    [InlineData("12345", true)]
     [InlineData("123456", true)]
     [InlineData("123456789012", true)]
     [InlineData("1234567890123", false)]
     [InlineData("12345a", false)]
     [InlineData("١٢٣٤٥٦", false)]
-    public void Pin_format_is_6_to_12_ascii_digits(string pin, bool ok) => Assert.Equal(ok, PinHasher.IsValidFormat(pin));
+    public void Pin_format_is_4_to_12_ascii_digits(string pin, bool ok) => Assert.Equal(ok, PinHasher.IsValidFormat(pin));
+
+    [Fact]
+    public async Task Pin_length_is_stored_when_set_and_learned_from_a_correct_pin()
+    {
+        using var dir = new TempDir();
+        var path = Path.Combine(dir.Path, "secrets.json");
+        var clock = new ManualClock(DateTimeOffset.Parse("2026-11-16T10:00:00Z", System.Globalization.CultureInfo.InvariantCulture));
+        var auth = new AuthService(new SecretStore(path), clock, iterations: 1000);
+        Assert.Null(auth.PinLength);
+        auth.SetPin("2468");
+        Assert.Equal(4, new AuthService(new SecretStore(path), clock, iterations: 1000).PinLength);
+
+        // A PIN set before the length was stored: unknown until the first correct PIN, never learned from a wrong one.
+        var store = new SecretStore(path);
+        store.Save(store.Load() with { PinLength = 0 });
+        var old = new AuthService(store, clock, iterations: 1000);
+        Assert.Null(old.PinLength);
+        await old.TryPinAsync("13579");
+        Assert.Null(old.PinLength);
+        Assert.True((await old.TryPinAsync("2468")).Ok);
+        Assert.Equal(4, new AuthService(new SecretStore(path), clock, iterations: 1000).PinLength);
+    }
 
     [Theory]
     [InlineData(4, 0)]

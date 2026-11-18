@@ -96,7 +96,8 @@ public sealed record PromptView(
     bool HelloOn,
     bool PasskeyOn,
     DateTimeOffset? LockoutUntil,
-    ThemeChoice Theme);
+    ThemeChoice Theme,
+    int? PinLength);
 
 // ---- Collections fetched on demand --------------------------------------------------------------------------------
 

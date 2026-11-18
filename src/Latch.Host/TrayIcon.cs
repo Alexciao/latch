@@ -4,19 +4,23 @@ using Latch.Core;
 
 namespace Latch.Host;
 
-/// <summary>The tray icon and its menu (Open Latch, Lock all now, Quit), over Shell_NotifyIcon. One state, no balloons
-/// (Latch's own notification card says when it is running).</summary>
+/// <summary>The tray icon and its menu (Open Latch, Lock all now, Restart to update when one is ready, Quit), over
+/// Shell_NotifyIcon. One state, no balloons (Latch's own notification card says when it is running).</summary>
 internal sealed class TrayIcon : IDisposable
 {
     private const uint CallbackMessage = Native.WM_APP + 1;
-    private const int CmdOpen = 1, CmdLockAll = 2, CmdQuit = 3;
+    private const int CmdOpen = 1, CmdLockAll = 2, CmdQuit = 3, CmdUpdate = 4;
     private readonly HwndSource _window;
     private readonly uint _taskbarCreated;
-    private readonly Action _open, _lockAll, _quit;
+    private readonly Action _open, _lockAll, _quit, _update;
     private nint _icon;
 
-    public TrayIcon(Action open, Action lockAll, Action quit)
+    /// <summary>Set once an update has been downloaded: the menu then offers to restart into it.</summary>
+    public bool UpdateReady { get; set; }
+
+    public TrayIcon(Action open, Action lockAll, Action quit, Action update)
     {
+        _update = update;
         _open = open;
         _lockAll = lockAll;
         _quit = quit;
@@ -111,6 +115,7 @@ internal sealed class TrayIcon : IDisposable
         Native.AppendMenuW(menu, 0, CmdOpen, Copy.Get("tray.open"));
         Native.AppendMenuW(menu, 0, CmdLockAll, Copy.Get("tray.lockAll"));
         Native.AppendMenuW(menu, 0x800, 0, null); // MF_SEPARATOR
+        if (UpdateReady) Native.AppendMenuW(menu, 0, CmdUpdate, Copy.Get("tray.restartToUpdate"));
         Native.AppendMenuW(menu, 0, CmdQuit, Copy.Get("tray.quit"));
         Native.GetCursorPos(out var pt);
         Native.SetForegroundWindow(_window.Handle);
@@ -121,6 +126,7 @@ internal sealed class TrayIcon : IDisposable
             case CmdOpen: _open(); break;
             case CmdLockAll: _lockAll(); break;
             case CmdQuit: _quit(); break;
+            case CmdUpdate: _update(); break;
         }
     }
 

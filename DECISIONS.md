@@ -46,7 +46,7 @@ experiment, [D] read in docs or source, [K] known but not re-checked.
 - .NET 10 (current LTS; SDK 10.0.404 pinned in `global.json` with feature roll-forward); host TFM
   `net10.0-windows10.0.19041.0` for WinRT (Hello, PackageManager) without extra packages.
 - Code-only WPF host + raw `CoreWebView2Controller`; a UI-free `Latch.Core` on plain `net10.0`.
-- Font: system Segoe UI Variable with Segoe UI fallback; no bundled font.
+- Font: system Segoe UI Variable with Segoe UI fallback; no bundled font. (Replaced by Inter on 2026-11-18, below.)
 
 ## Changes after the owner's first use (2026-11-16)
 
@@ -142,3 +142,34 @@ experiment, [D] read in docs or source, [K] known but not re-checked.
 - While Latch waits for Windows Hello, a recreated Windows 11 ProgressRing (32 px, 4 px round-capped stroke, accent
   fill colour, grow/shrink/rotate) shows on the cover after 100 ms, owned by the cover and animated only while shown.
   WinUI's real ProgressRing can't be hosted without XAML Islands.
+
+## Third round (2026-11-18)
+
+- The cover's background is a heavily blurred picture of the app (about 40 DIPs), mixed with the window colour (62 %
+  dark, 72 % light) so the title bar and prompt stand out. It can't be taken when the cover appears: the app's window
+  is hidden the moment it shows, before it has drawn anything. It is taken earlier instead, while the app is
+  unlocked: a second after its windows come back or it comes to the front, every 10 s while it stays in front and
+  the owner is active, and as it loses the front; never more than once per 2 s per app. PrintWindow with
+  PW_RENDERFULLCONTENT (GPU-drawn content included). [E] 33–45 ms for a 3408 × 1456 window, 90–100 ms including
+  the reduction in a Debug build, all on a below-normal thread of its own; the sharp capture is reduced to one pixel
+  per 12 DIPs at once and freed. Only the blurred picture is kept: in memory (about 5 MB per app at 3440 px wide)
+  and, reduced, in `cache\covers` (about 100 KB per app, at most one write a minute), so the first cover after
+  Latch starts has a picture too. Keeping it is harmless: it shows nothing more than the cover shows anyone. Files of
+  apps no longer locked are deleted at start. An app never unlocked since 0.2.0 gets the plain cover.
+- [E] A hidden window can't be captured: after SW_HIDE, PrintWindow returns all black for Notepad and Paint, with
+  and without PW_RENDERFULLCONTENT. And a freshly launched app is hidden before it has drawn anything anyway.
+- The cover paints the picture with a plain StretchBlt from half size (the picture is already smooth, with ±½ level
+  of noise against banding). [E] 2.3 ms; cover on screen 8–17 ms after the lock decision, as before.
+- PINs may be 4 to 12 digits (was 6 to 12). The PIN's length is stored with its hash (learned at the next correct
+  PIN for PINs set before), and the prompt submits as soon as that many digits are typed. The length is no secret
+  worth keeping: the masked field shows it anyway. Nothing is checked before the last digit, so a wrong PIN of the
+  right length counts as one wrong try, as before.
+- The UI font is Inter (owner's choice after side-by-side screenshots): the variable font with optical sizes
+  (@fontsource-variable/inter, bundled), and static Regular and SemiBold instances of the same font for the native
+  cover title bar and notification card (WPF can't select variable-font axes). The prompt loads the font while it's
+  still hidden, so the first prompt never paints in the fallback face.
+- Automatic updates through Velopack from the GitHub releases (the repository is public, so no token): a check a
+  minute after start and every 6 h, a quiet download, and installation at the next start (Velopack applies pending
+  updates at startup, and Latch starts with Windows). A toast says once that it's ready, and the tray menu offers
+  "Restart to update", which asks for an unlock like Quit. Latch never restarts itself unasked: a restart gives
+  hidden windows back and starts over.

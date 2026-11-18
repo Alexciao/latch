@@ -9,12 +9,13 @@ namespace Latch.Host;
 /// Watches top-level windows with out-of-context WinEvent hooks on a dedicated thread, so hiding a locked window
 /// never waits behind WPF or WebView2 work. Also hides, restores and closes app windows for the engine.
 /// </summary>
-internal sealed class WindowWatcher(LatchService service, Func<bool> dark, string iconDir, Action coverClicked, Action<string> coverClosed)
+internal sealed class WindowWatcher(LatchService service, Func<bool> dark, string iconDir, string coverDir, Action coverClicked, Action<string> coverClosed)
 {
     private readonly ConcurrentDictionary<nint, byte> _hiddenByUs = new();
     private readonly ConcurrentDictionary<int, RegisteredWaitHandle> _tracked = new();
     private Native.WinEventProc? _proc; // Kept alive for the hooks' lifetime.
     private Cover? _cover;
+    private Backdrop? _backdrop;
     private const uint RunMessage = Native.WM_APP + 7;
     private readonly ConcurrentQueue<Action> _work = new();
 
@@ -58,7 +59,9 @@ internal sealed class WindowWatcher(LatchService service, Func<bool> dark, strin
         {
             _threadId = Native.GetCurrentThreadId();
             _proc = OnEvent;
-            _cover = new Cover(dark, service.AppLabel, iconDir, coverClicked, coverClosed);
+            _backdrop = new Backdrop(service, dark, coverDir);
+            _backdrop.Start();
+            _cover = new Cover(dark, service.AppLabel, iconDir, coverClicked, coverClosed, _backdrop);
             _cover.Prepare();
             _cover.Prerender(service.Settings.Rules.Select(r => (r.Name, r.IconKey)));
             const uint flags = Native.WINEVENT_OUTOFCONTEXT | Native.WINEVENT_SKIPOWNPROCESS;
@@ -110,6 +113,7 @@ internal sealed class WindowWatcher(LatchService service, Func<bool> dark, strin
             return;
         }
         if (Native.GetAncestor(hwnd, Native.GA_ROOT) != hwnd || !Native.IsWindowVisible(hwnd)) return;
+        if (ev == Native.EVENT_SYSTEM_FOREGROUND) _backdrop!.Foreground(hwnd);
         try
         {
             if (service.OnWindow(hwnd, fromScan: false) is { } ruleId)
@@ -250,6 +254,7 @@ internal sealed class WindowWatcher(LatchService service, Func<bool> dark, strin
         var front = alive.FirstOrDefault(w => !Native.IsIconic(w));
         if (front != 0)
         {
+            _backdrop?.Foreground(front); // Unlocked and back on screen: its cover picture is taken a second later.
             Native.SetForegroundWindow(front);
             Native.BringWindowToTop(front);
         }

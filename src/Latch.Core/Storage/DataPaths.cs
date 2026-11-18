@@ -15,6 +15,7 @@ public sealed record DataPaths(string Root)
     public string Heartbeat => Path.Combine(Root, "heartbeat");
     public string Cache => Path.Combine(Root, "cache");
     public string Icons => Path.Combine(Root, "cache", "icons");
+    public string Covers => Path.Combine(Root, "cache", "covers");
     public string WebView => Path.Combine(Root, "cache", "webview2");
     public string Log => Path.Combine(Root, "latch.log");
 }

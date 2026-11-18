@@ -6,7 +6,7 @@ namespace Latch.Core.Security;
 public static class PinHasher
 {
     public const int DefaultIterations = 600_000;
-    public const int MinLength = 6;
+    public const int MinLength = 4;
     public const int MaxLength = 12;
 
     public static bool IsValidFormat(string pin) =>

@@ -70,7 +70,7 @@ function ChangePinDialog({ onClose }: { onClose: () => void }) {
   const [again, setAgain] = useState("");
   const [error, setError] = useState<string | null>(null);
   const save = async () => {
-    if (pin.length < 6) return setError(copy.setup.pinShort);
+    if (pin.length < 4) return setError(copy.setup.pinShort);
     if (pin !== again) return setError(copy.setup.pinMismatch);
     try {
       await api.setPin({ pin });
@@ -94,7 +94,7 @@ function ChangePinDialog({ onClose }: { onClose: () => void }) {
           <Button variant="outline" onClick={onClose}>
             {copy.common.cancel}
           </Button>
-          <Button disabled={pin.length < 6 || again.length < 6} onClick={() => void save()}>
+          <Button disabled={pin.length < 4 || again.length < 4} onClick={() => void save()}>
             {copy.settings.changePinAction}
           </Button>
         </DialogFooter>

@@ -2,6 +2,7 @@
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
     <TargetFramework>net10.0-windows10.0.19041.0</TargetFramework>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <SupportedOSPlatformVersion>10.0.19041.0</SupportedOSPlatformVersion>
     <UseWPF>true</UseWPF>
     <AssemblyName>Latch</AssemblyName>
@@ -39,6 +40,9 @@
   </ItemGroup>
   <ItemGroup>
     <Content Include="Latch.ico" CopyToOutputDirectory="PreserveNewest" />
+    <!-- Inter for the native surfaces (cover title bar, notification card): static instances of the variable font
+         the UI bundles, since WPF can't pick variable-font axes. -->
+    <Content Include="Fonts\*" CopyToOutputDirectory="PreserveNewest" />
     <!-- The built UI (pnpm build in web/) is served from wwwroot through a private virtual host. -->
     <Content Include="..\..\web\dist\**\*" LinkBase="wwwroot" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>

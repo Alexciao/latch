@@ -110,7 +110,7 @@ internal sealed class Toast
             ShowActivated = false,
             Topmost = true,
             SizeToContent = SizeToContent.WidthAndHeight,
-            FontFamily = new FontFamily("Segoe UI Variable Text, Segoe UI"),
+            FontFamily = Theme.UiFont(),
             Content = _card,
             Left = -10000,
             Top = -10000,

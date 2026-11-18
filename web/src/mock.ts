@@ -130,7 +130,7 @@ const impl: LatchApi = {
     return {};
   },
   async setPin({ pin }) {
-    if (!/^\d{6,12}$/.test(pin)) fail("pinFormat");
+    if (!/^\d{4,12}$/.test(pin)) fail("pinFormat");
     state.methods.pinSet = true;
     rebuild();
     return {};
@@ -244,5 +244,6 @@ export function mockPrompt(): PromptView {
     passkeyOn: kind !== "plain",
     lockoutUntil: kind === "lockout" ? new Date(Date.now() + 28_000).toISOString() : null,
     theme: (params.get("theme") as PromptView["theme"]) ?? "system",
+    pinLength: 6,
   };
 }

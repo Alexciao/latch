@@ -2,7 +2,7 @@
   "glossary": {
     "Lock": "Hide an app's windows behind the unlock prompt. Verb and state: 'Lock all now', 'Spotify is locked'.",
     "Unlock": "Prove it's the owner so a locked app shows again. Never 'open', 'release' or 'authenticate'.",
-    "App PIN": "Latch's own 6 to 12 digit PIN. Never 'password', 'passcode' or 'Windows PIN'.",
+    "App PIN": "Latch's own 4 to 12 digit PIN. Never 'password', 'passcode' or 'Windows PIN'.",
     "Passkey": "A passkey on the owner's phone or security key, never on this PC. Never 'FIDO', 'WebAuthn' or 'security code'.",
     "Grace period": "Time after an unlock when relaunching the app doesn't ask again.",
     "Windows Hello": "The system face, fingerprint or Windows PIN check. Always written in full.",
@@ -17,6 +17,7 @@
     "tooltip": "Latch",
     "open": "Open Latch",
     "lockAll": "Lock all now",
+    "restartToUpdate": "Restart to update",
     "quit": "Quit"
   },
   "nav": {
@@ -55,11 +56,11 @@
   "setup": {
     "step": "Step {n} of 3",
     "pinTitle": "Set your app PIN",
-    "pinCaption": "6 to 12 digits, separate from your Windows PIN.",
+    "pinCaption": "4 to 12 digits, separate from your Windows PIN.",
     "pinNew": "App PIN",
     "pinAgain": "Enter it again",
     "pinMismatch": "The PINs don't match.",
-    "pinShort": "Use 6 to 12 digits.",
+    "pinShort": "Use 4 to 12 digits.",
     "methodsTitle": "Other ways to unlock",
     "methodsCaption": "Both are optional. You can change them later in Settings.",
     "helloTitle": "Windows Hello",
@@ -163,7 +164,7 @@
   },
   "errors": {
     "unexpected": "Something went wrong. Try again, and restart Latch if it keeps happening.",
-    "pinFormat": "Use 6 to 12 digits.",
+    "pinFormat": "Use 4 to 12 digits.",
     "needsUnlock": "Unlock first, then try again.",
     "helloUnavailable": "Windows Hello isn't set up on this PC. Set it up in Windows Settings, then try again.",
     "helloFailed": "Windows Hello didn't verify. Try again.",
@@ -175,7 +176,9 @@
   "toast": {
     "runningTitle": "Latch is running",
     "runningCaption": "Open it from the tray icon.",
-    "lockedAll": "All apps are locked"
+    "lockedAll": "All apps are locked",
+    "updateTitle": "Latch {version} is ready",
+    "updateCaption": "It installs the next time Latch starts."
   },
   "cover": {
     "locked": "Locked"

@@ -32,9 +32,11 @@ internal sealed class Cover
     private nint _below; // Non-zero while a system dialog is up: covers sit just under its group.
 
     private readonly Action<string> _close;
+    private readonly Backdrop _backdrop;
 
-    public Cover(Func<bool> dark, Func<string, (string Name, string? IconKey)?> label, string iconDir, Action clicked, Action<string> close)
+    public Cover(Func<bool> dark, Func<string, (string Name, string? IconKey)?> label, string iconDir, Action clicked, Action<string> close, Backdrop backdrop)
     {
+        _backdrop = backdrop;
         _close = close;
         _dark = dark;
         _label = label;
@@ -261,10 +263,16 @@ internal sealed class Cover
             lock (_gate) _byHwnd.TryGetValue(hwnd, out e);
             Native.GetClientRect(hwnd, out var rc);
             var dark = _dark();
-            // One surface, title bar included, in the Windows 11 window colours (what Mica falls back to).
-            Fill(hdc, rc, dark ? 0x202020u : 0xF3F3F3u);
-            if (e is null) return;
+            var surface = dark ? 0x202020u : 0xF3F3F3u;
             var scale = Native.GetDpiForWindow(hwnd) / 96.0;
+            // The title bar in the Windows 11 window colour (what Mica falls back to); below it, a blurred picture of
+            // the app when there is one, else the same colour.
+            var bar = (int)Math.Round(32 * scale);
+            if (e is not null && rc.Bottom > bar && _backdrop.Use(e.RuleId, dark, p => Stretch(hdc, p, rc, bar)))
+                Fill(hdc, new Native.RECT { Right = rc.Right, Bottom = bar }, surface);
+            else
+                Fill(hdc, rc, surface);
+            if (e is null) return;
             // Never wait on text layout here: if a piece isn't rendered yet, ask for it and repaint when it's ready.
             var left = Piece(PieceKey.Left(e, scale, dark), hwnd);
             var right = Piece(PieceKey.Right(scale, dark), hwnd);
@@ -363,8 +371,8 @@ internal sealed class Cover
 
     /// <summary>
     /// A piece of a Windows 11 caption, 32 px high: the app's 16 px icon (rounded like on the Hello card) and its
-    /// name in 12 px Segoe UI Variable, or a lock and "Locked" in the muted colour. Laid out by WPF (the same text
-    /// engine as the rest of Latch; GDI can't render Segoe UI Variable well) into an opaque premultiplied bitmap.
+    /// name in 12 px Inter, or a lock and "Locked" in the muted colour. Laid out by WPF (GDI can't load a private
+    /// font file as cleanly, nor render it as well) into an opaque premultiplied bitmap.
     /// </summary>
     private Bitmap? Render(PieceKey key)
     {
@@ -377,7 +385,7 @@ internal sealed class Cover
             var text = new SolidColorBrush(key.Dark ? Color.FromRgb(0xFF, 0xFF, 0xFF) : Color.FromRgb(0x1A, 0x1A, 0x1A));
             var muted = new SolidColorBrush(key.Dark ? Color.FromRgb(0xA8, 0xA8, 0xA8) : Color.FromRgb(0x5F, 0x5F, 0x5F));
             var background = new SolidColorBrush(key.Dark ? Color.FromRgb(0x20, 0x20, 0x20) : Color.FromRgb(0xF3, 0xF3, 0xF3));
-            var face = new Typeface(new FontFamily("Segoe UI Variable Text, Segoe UI"), System.Windows.FontStyles.Normal, System.Windows.FontWeights.Normal, System.Windows.FontStretches.Normal);
+            var face = new Typeface(Theme.UiFont(), System.Windows.FontStyles.Normal, System.Windows.FontWeights.Normal, System.Windows.FontStretches.Normal);
 
             var visual = new DrawingVisual();
             TextOptions.SetTextRenderingMode(visual, System.Windows.Media.TextRenderingMode.Grayscale);
@@ -462,6 +470,18 @@ internal sealed class Cover
         var mem = Native.CreateCompatibleDC(hdc);
         var old = Native.SelectObject(mem, b.Handle);
         Native.BitBlt(hdc, x, y, width, b.Height, mem, 0, 0, 0x00CC0020); // SRCCOPY: the pieces are opaque.
+        Native.SelectObject(mem, old);
+        Native.DeleteDC(mem);
+    }
+
+    /// <summary>The picture spans the whole window; the part under the title bar is left out.</summary>
+    private static void Stretch(nint hdc, Backdrop.Picture p, Native.RECT rc, int bar)
+    {
+        var mem = Native.CreateCompatibleDC(hdc);
+        var old = Native.SelectObject(mem, p.Bitmap);
+        var sy = (int)Math.Round((double)bar * p.Height / rc.Bottom);
+        Native.SetStretchBltMode(hdc, 3); // COLORONCOLOR: the picture is already smooth, so plain scaling is enough (and fast).
+        Native.StretchBlt(hdc, 0, bar, rc.Right, rc.Bottom - bar, mem, 0, sy, p.Width, p.Height - sy, 0x00CC0020);
         Native.SelectObject(mem, old);
         Native.DeleteDC(mem);
     }

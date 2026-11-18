@@ -79,6 +79,7 @@ export interface PromptView {
   passkeyOn: boolean;
   lockoutUntil: string | null;
   theme: ThemeChoice;
+  pinLength: number | null;
 }
 
 export interface InstalledApp {

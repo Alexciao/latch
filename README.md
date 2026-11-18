@@ -27,7 +27,7 @@ Windows Hello or a passkey. Hand someone your laptop and they can browse the web
 - **Fast, so locked apps don't show.** Latch sees a locked app's window the moment Windows shows it and hides it. A
   cover with the app's icon and a *Locked* title bar is in its spot within about a frame, and the pre-warmed unlock
   prompt paints about a tenth of a second after the app opens.
-- **Unlock the way you already do.** Use a 6–12 digit app PIN, Windows Hello (face, fingerprint or Windows PIN), or a
+- **Unlock the way you already do.** Use a 4–12 digit app PIN, Windows Hello (face, fingerprint or Windows PIN), or a
   passkey on your phone or a security key. A passkey also resets a forgotten PIN.
 - **Calm, not naggy.** A grace period means relaunching an app you just unlocked doesn't ask again. Apps relock when they
   close (tray apps like WhatsApp and Discord included), after you've been idle, or all at once with **Win+Shift+X**.
@@ -48,7 +48,8 @@ path, or by the same signed publisher and product, so an update that moves the e
 other packaged apps, Calculator and Notepad included, match by package.
 
 **Three ways to unlock.**
-- *App PIN*: 6 to 12 digits, separate from your Windows PIN. It's stored only as a salted PBKDF2-SHA256 hash
+- *App PIN*: 4 to 12 digits, separate from your Windows PIN, and the prompt unlocks as soon as you type the last
+  one. It's stored only as a salted PBKDF2-SHA256 hash
   (600,000 iterations) and checked in constant time.
 - *Windows Hello*: optional. Anyone who knows your Windows PIN can then unlock, and Latch says so when you turn it on.
 - *Passkey*: optional, on your phone (by QR code) or a security key, never on the PC itself. Latch is its own WebAuthn
@@ -67,8 +68,9 @@ there and under *Needs attention*. A 60-second heartbeat tells a clean quit apar
 starting with Windows all ask you to unlock first.
 
 **Feels like Windows.** A tray app with Mica on Windows 11 and light and dark themes that follow Windows. The cover
-uses Windows 11 caption metrics, and while Windows Hello is open the prompt shrinks to a small card just above its
-dialog.
+uses Windows 11 caption metrics over a heavily blurred picture of the app from the last time you used it, and while
+Windows Hello is open the prompt shrinks to a small card just above its dialog. Text is set in Inter, bundled with
+Latch.
 
 ## What Latch doesn't do
 
@@ -93,6 +95,10 @@ choice is in [DECISIONS.md](DECISIONS.md).
    anyway**.
 3. First run walks you through three steps: set your app PIN, optionally turn on Windows Hello or add a passkey, and
    pick the apps to lock. Latch then lives in the tray and starts with Windows.
+
+Latch updates itself from this repository's releases. It checks a minute after it starts and every 6 hours, downloads
+a new version quietly and installs it the next time it starts, or right away from **Restart to update** in the tray
+menu. (0.1.0 predates this: install 0.2.0 by hand once.)
 
 The app lives in `%LocalAppData%\LatchApp`. Your settings, PIN hash, history and log live apart from it in
 `%LocalAppData%\Latch`, so reinstalling keeps them. Delete that folder to remove everything.

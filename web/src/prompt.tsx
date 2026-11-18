@@ -100,10 +100,10 @@ function Prompt({ view }: { view: PromptView }) {
     requestAnimationFrame(() => input.current?.focus());
   }
 
-  async function submit() {
-    if (busy || locked || pin.length < 6) return;
+  async function submit(value = pin) {
+    if (busy || locked || value.length < 4) return;
     setBusy(true);
-    handle(await api.submitPin({ promptId: view.promptId, pin }));
+    handle(await api.submitPin({ promptId: view.promptId, pin: value }));
   }
 
   /** Windows Hello or a passkey: compact card while the system dialog is up, back to the PIN if it's cancelled. */
@@ -148,6 +148,8 @@ function Prompt({ view }: { view: PromptView }) {
             onChange={(v) => {
               setPin(v);
               setError(null);
+              // The PIN's length is known once it has been set (or used once): submit as soon as it's all typed.
+              if (view.pinLength && v.length === view.pinLength) void submit(v);
             }}
             onEnter={() => void submit()}
           />
@@ -176,7 +178,7 @@ function Prompt({ view }: { view: PromptView }) {
         <Button variant="outline" onClick={() => void api.cancelPrompt({ promptId: view.promptId })}>
           {copy.prompt.notNow}
         </Button>
-        <Button disabled={busy || locked || pin.length < 6} onClick={() => void submit()}>
+        <Button disabled={busy || locked || pin.length < 4} onClick={() => void submit()}>
           {copy.prompt.unlock}
         </Button>
       </div>
@@ -207,6 +209,9 @@ function App() {
 }
 
 applyTheme("system");
+// The pre-warmed prompt renders nothing until a prompt arrives, so nothing would ask for the font before then and
+// the first prompt would paint in the fallback face. Load it now, while the view is still hidden.
+void document.fonts.load('16px "Inter Variable"');
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
     <App />
